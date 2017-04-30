@@ -1,102 +1,98 @@
 #**Finding Lane Lines on the Road** 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-<img src="laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
-
-Overview
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+**Finding Lane Lines on the Road**
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
-
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
-
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
+The goals / steps of this project are the following:
+* Make a pipeline that finds lane lines on the road
 
 
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
-1. Describe the pipeline
-2. Identify any shortcomings
-3. Suggest possible improvements
+[//]: # (Image References)
 
-We encourage using images in your writeup to demonstrate how your pipeline works.  
+[image1]: ./examples/grayscale.jpg "Grayscale"
+[image2]: ./examples/solidWhiteCurve.jpg "Solid white curve"
+[image3]: ./examples/grayscale.jpg "Grayscale"
+[image4]: ./examples/solidWhiteCurve_gaussian.jpg "Solid white curve gaussian blurred"
+[image5]: ./examples/solidWhiteCurve_canny.jpg "Solid white curve canny edge detection"
+[image6]: ./examples/solidWhiteCurve_output.jpg "Solid white curve output"
+[image7]: ./examples/2_lines_line_output.jpg "2 lines output"
+[image8]: ./examples/solidWhiteCurve_liner_regression_output.jpg "linear regression output"
+[image9]: ./examples/solidYellowCurve2_liner_regression_output.jpg "Linear regression 2"
+[image10]: ./examples/whiteCarLaneSwitch_liner_regression_output.jpg "Linear regression"
 
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
 
 
-The Project
 ---
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you can install the starter kit or follow the install instructions below to get started on this project. ##
+### Reflection
 
-**Step 1:** Getting setup with Python
+###1. The project pipeline consisted of the following steps:
+* Read in the Image consisting of 3 channels
+* Conversion of color image to grayscale
+* Noise reduction 
+* Edge detecion to detect edges in the lane
+* Region of interes definition to extract only the required part of the image
+* Extract lines from edge detected image within the region of interest
+* Draw the lines on the original image representing lane lines
+      
+The detailed steps are explained below 
 
-To do this project, you will need Python 3 along with the numpy, matplotlib, and OpenCV libraries, as well as Jupyter Notebook installed. 
+1.Assuming the camera is mounted on the car, the image read in looks like below
+![alt_text][image2]
 
-We recommend downloading and installing the Anaconda Python 3 distribution from Continuum Analytics because it comes prepackaged with many of the Python dependencies you will need for this and future projects, makes it easy to install OpenCV, and includes Jupyter Notebook.  Beyond that, it is one of the most common Python distributions used in data analytics and machine learning, so a great choice if you're getting started in the field.
 
-Choose the appropriate Python 3 Anaconda install package for your operating system <A HREF="https://www.continuum.io/downloads" target="_blank">here</A>.   Download and install the package.
 
-If you already have Anaconda for Python 2 installed, you can create a separate environment for Python 3 and all the appropriate dependencies with the following command:
+2.The image is converter to grayscale from RGB space, after which the image looks as below
+![alt_text][image1]
 
-`>  conda create --name=yourNewEnvironment python=3 anaconda`
 
-`>  source activate yourNewEnvironment`
 
-**Step 2:** Installing OpenCV
+3.After doing noise using a gaussian filter of size [3,3] the image is as shown below
+![alt_text][image4]
 
-Once you have Anaconda installed, first double check you are in your Python 3 environment:
 
-`>python`    
-`Python 3.5.2 |Anaconda 4.1.1 (x86_64)| (default, Jul  2 2016, 17:52:12)`  
-`[GCC 4.2.1 Compatible Apple LLVM 4.2 (clang-425.0.28)] on darwin`  
-`Type "help", "copyright", "credits" or "license" for more information.`  
-`>>>`   
-(Ctrl-d to exit Python)
 
-run the following commands at the terminal prompt to get OpenCV:
+4.Next the images are passed to an edge detecor, where edge detection is done using Canny edge detection
+The canny edge detector has the following parameters
+low_threshold = 50                                            
+high_threshold = 150
 
-`> pip install pillow`  
-`> conda install -c menpo opencv3=3.1.0`
+![alt_text][image5]
 
-then to test if OpenCV is installed correctly:
+5,6,7].The lines are extracted using hough transform with the following parameters parameters
+rho = 1                                                       
+theta = np.pi / 180                                           
+threshold = 10                                                
+min_line_length = 10                                         
+max_line_gap = 15
 
-`> python`  
-`>>> import cv2`  
-`>>>`  (i.e. did not get an ImportError)
+The output of the hough transform is overlayed on the original image 
 
-(Ctrl-d to exit Python)
+![alt_text][image6]
 
-**Step 3:** Installing moviepy  
+As seen in the above image We need a single solid line representing the lanes on either side, So the output points of the hough transform lying on the left side is separated from the points lying on the right side of the image. We fit a line to left set of points and to the right points separately using linear regression.
 
-We recommend the "moviepy" package for processing video in this project (though you're welcome to use other packages if you prefer).  
+![alt_text][image7]
 
-To install moviepy run:
+The linear regression output is overlayed on the original image, then the output images look like 
 
-`>pip install moviepy`  
+![alt_text][image8]
 
-and check that the install worked:
+The above procedure is done on other images and the results are as shown below
 
-`>python`  
-`>>>import moviepy`  
-`>>>`  (i.e. did not get an ImportError)
+![alt_text][image9]
 
-(Ctrl-d to exit Python)
+![alt_text][image10]
 
-**Step 4:** Opening the code in a Jupyter Notebook
 
-You will complete this project in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
+###2. The potential shortcomings of the above procesure is 
+    1) The parameters have been chosen to be static
+    2) There is no compensation for high lighting and low lighting conditions
 
-Jupyter is an ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, run the following command at the terminal prompt (be sure you're in your Python 3 environment!):
 
-`> jupyter notebook`
-
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
-
-**Step 5:** Complete the project and submit both the Ipython notebook and the project writeup
+###3.A possible improvement would be to 
+    1) Study suggests that processing when done in HSV space is better than working with RGB space.
+    2) HSV space allows to handle dynamic lighting conditions
+    
 
